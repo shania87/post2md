@@ -6,7 +6,7 @@ Live: https://shania87.github.io/post2md/
 
 ## Sites
 
-- **X**: the post, the author's own thread, the parent chain it replies to (up to 5), quoted posts, and images. Data comes from `api.fxtwitter.com`. Replies from other accounts aren't included.
+- **X**: the post, the author's own thread, the parent chain it replies to (up to 5), quoted posts, images, and the top replies from other accounts (first page, about 30–60, ranked by likes, nested by who answered whom). Data comes from `api.fxtwitter.com`. Untick **Include replies** to leave them out.
 - **Reddit**: handed off to [RedditMD](https://adoucett.github.io/RedditMD/). Short `/s/` share links have to be opened in a browser first.
 
 To add a site, add a matcher to `resolve.js` and an entry to `sites.js` (`load` + `format`, or `handoff`).

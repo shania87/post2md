@@ -4,6 +4,9 @@ import { prefetch, shareOut, copyText } from "./share.js";
 
 const $ = (id) => document.getElementById(id);
 let current = null;
+// The last loaded post, kept so toggling replies re-formats without refetching.
+let loaded = null;
+const formatOptions = () => ({ includeReplies: $("includeReplies").checked });
 // Bumped on every run; a run whose number is no longer current drops its result.
 let generation = 0;
 
@@ -38,6 +41,7 @@ async function run(...inputs) {
   const mine = ++generation;
   const stale = () => mine !== generation;
   current = null;
+  loaded = null;
   $("result").hidden = true;
   $("handoff").hidden = true;
   const link = resolve(...inputs);
@@ -59,9 +63,11 @@ async function run(...inputs) {
   }
 
   setStatus(`Loading ${site.label} post…`);
+  let data;
   let result;
   try {
-    result = site.format(await site.load(link));
+    data = await site.load(link);
+    result = site.format(data, formatOptions());
   } catch (err) {
     if (stale()) return;
     setStatus(err.message || String(err), "error");
@@ -74,6 +80,7 @@ async function run(...inputs) {
 
   if (stale()) return;
   current = result;
+  loaded = { site, data };
   $("markdown").value = result.markdown;
   renderImages();
   $("result").hidden = false;
@@ -95,6 +102,13 @@ $("form").addEventListener("submit", (event) => {
   if (!value) return;
   history.replaceState(null, "", `?u=${encodeURIComponent(value)}`);
   run(value);
+});
+
+$("includeReplies").addEventListener("change", () => {
+  if (!current || !loaded) return;
+  // Only the markdown changes; the image list (and any downloads in progress) stay as they are.
+  current.markdown = loaded.site.format(loaded.data, formatOptions()).markdown;
+  $("markdown").value = current.markdown;
 });
 
 $("share").addEventListener("click", async () => {

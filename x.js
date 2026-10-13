@@ -20,11 +20,25 @@ async function getJson(path, fetchImpl) {
   return body;
 }
 
-// Returns { status, thread, parents }:
+// Other people's replies: one page from /conversation, ranked by likes. Its cursor
+// pagination returned 404 when tested (2026-10-13), so only the first page is used.
+// Replies are optional: a failure here leaves the post itself intact.
+async function loadReplies(id, fetchImpl) {
+  try {
+    const body = await getJson(`/conversation/${id}`, fetchImpl);
+    return Array.isArray(body.replies) ? body.replies.filter(isTweet) : [];
+  } catch {
+    return null;
+  }
+}
+
+// Returns { status, thread, parents, replies }:
 // status  - the tweet that was shared
 // thread  - the author's own chain containing it, oldest first
 // parents - tweets above the chain that it replies to, oldest first
+// replies - other replies in the conversation (null if they couldn't be loaded)
 export async function loadX(id, fetchImpl = fetch) {
+  const repliesPromise = loadReplies(id, fetchImpl);
   const body = await getJson(`/thread/${id}`, fetchImpl);
   // Trust thread order, not replying_to: trailing self-tweets can have a null reply field.
   const chain = Array.isArray(body.thread) ? body.thread.filter(isTweet) : [];
@@ -38,5 +52,7 @@ export async function loadX(id, fetchImpl = fetch) {
     parents.unshift(parent.status);
     reply = parent.status.replying_to;
   }
-  return { status: body.status, thread, parents };
+  const shown = new Set([...thread, ...parents].map((t) => t.id));
+  const replies = (await repliesPromise)?.filter((r) => !shown.has(r.id)) ?? null;
+  return { status: body.status, thread, parents, replies };
 }

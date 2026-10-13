@@ -60,6 +60,8 @@
     .thumb span { display: block; padding: 4px 8px; font-size: 0.8rem; color: var(--muted); }
     .thumb.failed span { color: var(--err); }
     #handoff p { margin: 0 0 8px; }
+    .option { display: flex; align-items: center; gap: 8px; margin: 16px 0 0; }
+    .option input { width: 20px; height: 20px; }
   </style>
 </head>
 <body>
@@ -88,6 +90,7 @@
         <h2>Images to attach (ticked ones go with Share, up to 4)</h2>
         <div id="images"></div>
       </div>
+      <label class="option"><input id="includeReplies" type="checkbox" checked> Include replies</label>
       <h2>Markdown</h2>
       <textarea id="markdown" readonly spellcheck="false" aria-label="Markdown output"></textarea>
     </section>

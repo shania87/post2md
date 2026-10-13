@@ -95,3 +95,36 @@ test("bad media entries and timestamps don't abort formatting", () => {
   assert.deepEqual(images.map((i) => i.url), ["https://pbs.twimg.com/media/A.jpg"]);
   assert.match(markdown, /\[Image 1\]\(https:\/\/pbs\.twimg\.com\/media\/A\.jpg\)/);
 });
+
+test("replies: nested under what they answer, chain tweets excluded, @prefix stripped", async () => {
+  const data = await loadX("2109649336405458946", fakeFetch({
+    "/thread/2109649336405458946": fixture("thread-andilosing"),
+    "/conversation/2109649336405458946": fixture("conversation-andilosing"),
+  }));
+  // The author's 2/2 self-reply is in the thread, so it must not repeat as a reply.
+  assert.ok(!data.replies.some((r) => r.id === "2109720698553860606"));
+  const { markdown, images } = formatX(data);
+  assert.match(markdown, /## Replies/);
+  assert.match(markdown, /^> \*\*@noahnomads\*\* · \d+ likes\n> how could you forget/m);
+  assert.match(markdown, /^>> \*\*@andilosing\*\* · \d+ likes\n>> i did :\(/m);
+  assert.equal(images.length, 1, "reply images are never attached");
+  assert.doesNotMatch(formatX(data, { includeReplies: false }).markdown, /## Replies/);
+});
+
+test("replies failing to load leaves the post intact", async () => {
+  const data = await loadX("2108959650875843024", fakeFetch({ "/thread/2108959650875843024": fixture("thread-stochasticmacaw") }));
+  assert.equal(data.replies, null);
+  const { markdown } = formatX(data);
+  assert.match(markdown, /80\+ new Singapore/);
+  assert.match(markdown, /_Replies couldn't be loaded\._/);
+});
+
+test("reply cycles and deep nesting don't loop or vanish", () => {
+  const t = (id, parent, text) => ({ id, text, author: { screen_name: id }, likes: 0, replying_to: parent ? { status: parent } : null });
+  const root = { id: "0", text: "post", url: "https://x.com/u/status/0", author: { screen_name: "u", name: "U" } };
+  const replies = [t("a", "b", "cyc-a"), t("b", "a", "cyc-b"), t("1", "0", "d1"), t("2", "1", "d2"), t("3", "2", "d3"),
+    t("4", "3", "d4"), t("5", "4", "d5")];
+  const { markdown } = formatX({ status: root, thread: [root], replies });
+  for (const text of ["cyc-a", "cyc-b", "d5"]) assert.match(markdown, new RegExp(text));
+  assert.match(markdown, /^>>>> d5$/m, "depth is capped at 4");
+});

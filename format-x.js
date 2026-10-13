@@ -54,7 +54,53 @@ function tweetBody(tweet, images, checked) {
   return parts.join("\n\n");
 }
 
-export function formatX({ status, thread, parents = [] }) {
+const MAX_REPLY_DEPTH = 4;
+
+// Nests replies under whatever they reply to; anything whose parent isn't in the set is top level.
+// Keeps the API's order (ranked by likes) at every level.
+function replyTree(replies) {
+  const ids = new Set(replies.map((r) => r.id));
+  const children = new Map();
+  const roots = [];
+  for (const r of replies) {
+    const parent = r.replying_to?.status;
+    if (parent && ids.has(parent) && parent !== r.id) {
+      if (!children.has(parent)) children.set(parent, []);
+      children.get(parent).push(r);
+    } else {
+      roots.push(r);
+    }
+  }
+  return { roots, children };
+}
+
+function replyBlock(reply, depth, children, seen) {
+  if (seen.has(reply.id)) return [];
+  seen.add(reply.id);
+  // Replies start with the @handles they answer; the nesting already says that.
+  const text = (reply.text || "").replace(/^(?:@\w+\s+)+/, "");
+  const lines = [`**@${reply.author?.screen_name}** · ${count(reply.likes, "likes")}`, text];
+  const media = mediaLines(reply, [], false).map((line) => line.replace(/^\[Image \d+\]/, "[image]"));
+  if (media.length) lines.push(media.join("  "));
+  const prefix = ">".repeat(Math.min(depth, MAX_REPLY_DEPTH));
+  const block = [lines.join("\n").split("\n").map((line) => (line ? `${prefix} ${line}` : prefix)).join("\n")];
+  for (const child of children.get(reply.id) || []) block.push(...replyBlock(child, depth + 1, children, seen));
+  return block;
+}
+
+function repliesSection(replies, root) {
+  if (replies === null) return ["## Replies", "_Replies couldn't be loaded._"];
+  if (!replies.length) return [];
+  const { roots, children } = replyTree(replies);
+  const seen = new Set();
+  const blocks = roots.flatMap((r) => replyBlock(r, 1, children, seen));
+  // Replies caught in a reply cycle never hang off a root; show them at top level rather than drop them.
+  for (const r of replies) if (!seen.has(r.id)) blocks.push(...replyBlock(r, 1, children, seen));
+  const total = root.replies ? `; X shows ${count(root.replies, "replies")} in total` : "";
+  return ["## Replies", `_Top ${replies.length} replies by likes${total}. Images in replies are linked, not attached._`, ...blocks];
+}
+
+export function formatX({ status, thread, parents = [], replies = [] }, { includeReplies = true } = {}) {
   const root = thread[0];
   const author = root.author || status.author || {};
   const images = [];
@@ -76,6 +122,8 @@ export function formatX({ status, thread, parents = [] }) {
     if (thread.length > 1) out.push(`## ${i + 1}/${thread.length}`);
     out.push(tweetBody(tweet, images, true));
   });
+
+  if (includeReplies) out.push(...repliesSection(replies, root));
 
   return {
     title: `@${author.screen_name} on X`,

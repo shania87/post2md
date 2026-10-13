@@ -1,7 +1,7 @@
 // Exists so Chrome treats the page as installable (and so it can be a share target).
 // Network first; the cached shell only covers opening the app with no connection.
 
-const CACHE = "post2md-v2";
+const CACHE = "post2md-v3";
 const SHELL = ["./", "index.html", "app.js", "resolve.js", "sites.js", "x.js", "format-x.js", "share.js",
   "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 

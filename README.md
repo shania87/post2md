@@ -22,3 +22,7 @@ You can also paste a link, or open `?u=<link>`.
 ## Develop
 
 No build step. Serve the folder (`python -m http.server`) and open it. Tests: `npm test` (Node 20+).
+
+## License
+
+MIT, see [LICENSE](LICENSE). The sample posts in `test/fixtures/` are fxtwitter API responses for public X posts. They're included only as test data, and the license doesn't cover them.

@@ -1,0 +1,6 @@
+{
+  "name": "post2md",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test" }
+}

@@ -1,8 +1,9 @@
 // Turns loadX() output into markdown plus the list of images worth attaching.
 
 function utc(tweet) {
-  if (!tweet.created_timestamp) return tweet.created_at || "";
-  return new Date(tweet.created_timestamp * 1000).toISOString().slice(0, 16).replace("T", " ") + " UTC";
+  const date = new Date(Number(tweet.created_timestamp) * 1000);
+  if (!tweet.created_timestamp || Number.isNaN(date.getTime())) return String(tweet.created_at || "");
+  return date.toISOString().slice(0, 16).replace("T", " ") + " UTC";
 }
 
 function quoteLines(text) {
@@ -16,9 +17,14 @@ function count(n, word) {
 // Media lines for one tweet. Photos are pushed into `images` so the share step can attach them.
 function mediaLines(tweet, images, checked) {
   const lines = [];
-  const all = tweet.media?.all || [...(tweet.media?.photos || []), ...(tweet.media?.videos || [])];
+  const media = tweet.media || {};
+  const all = Array.isArray(media.all) ? media.all
+    : [media.photos, media.videos].filter(Array.isArray).flat();
+  // API JSON is untrusted: skip entries that aren't usable rather than failing the whole export.
   for (const item of all) {
+    if (!item || typeof item !== "object") continue;
     if (item.type === "photo") {
+      if (typeof item.url !== "string") continue;
       images.push({ url: item.url, checked, tweetId: tweet.id });
       lines.push(`[Image ${images.length}](${item.url})`);
     } else {
@@ -33,7 +39,7 @@ function tweetBody(tweet, images, checked) {
   const parts = [tweet.text || ""];
   const media = mediaLines(tweet, images, checked);
   if (media.length) parts.push(media.join("  "));
-  if (tweet.quote) {
+  if (tweet.quote && typeof tweet.quote === "object") {
     const q = tweet.quote;
     const quoted = [`**Quoting @${q.author?.screen_name}:** ${q.text || ""}`];
     // Quoted images are listed but not attached by default: they're context, not the post.

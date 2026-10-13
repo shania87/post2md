@@ -68,3 +68,30 @@ test("reply to someone else: parent chain fetched and shown first", async () => 
 test("missing tweet gives a readable error", async () => {
   await assert.rejects(loadX("1", fakeFetch({})), (err) => err instanceof FetchError && /not found/.test(err.message));
 });
+
+test("malformed thread entries fall back to the status tweet", async () => {
+  const status = { id: "1", text: "hi", url: "https://x.com/u/status/1", author: { screen_name: "u", name: "U" } };
+  for (const thread of [[null], "oops", [null, 5, "x"]]) {
+    const data = await loadX("1", fakeFetch({ "/thread/1": { code: 200, status, thread } }));
+    assert.deepEqual(data.thread, [status]);
+    assert.match(formatX(data).markdown, /^# Post by @u/);
+  }
+});
+
+test("non-tweet status is a readable error, not a crash", async () => {
+  await assert.rejects(loadX("1", fakeFetch({ "/thread/1": { code: 200, status: "nope", thread: [] } })), FetchError);
+});
+
+test("bad media entries and timestamps don't abort formatting", () => {
+  const tweet = {
+    id: "1", text: "still here", url: "https://x.com/u/status/1", author: { screen_name: "u", name: "U" },
+    created_timestamp: "invalid", created_at: "Mon Oct 12 2026",
+    media: { all: [null, 7, { type: "photo" }, { type: "photo", url: "https://pbs.twimg.com/media/A.jpg" }] },
+    quote: "not an object",
+  };
+  const { markdown, images } = formatX({ status: tweet, thread: [tweet] });
+  assert.match(markdown, /still here/);
+  assert.match(markdown, /Mon Oct 12 2026/);
+  assert.deepEqual(images.map((i) => i.url), ["https://pbs.twimg.com/media/A.jpg"]);
+  assert.match(markdown, /\[Image 1\]\(https:\/\/pbs\.twimg\.com\/media\/A\.jpg\)/);
+});

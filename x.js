@@ -5,6 +5,8 @@ const MAX_PARENTS = 5;
 
 export class FetchError extends Error {}
 
+const isTweet = (value) => value !== null && typeof value === "object" && typeof value.id === "string";
+
 async function getJson(path, fetchImpl) {
   const res = await fetchImpl(API + path);
   let body = null;
@@ -12,7 +14,7 @@ async function getJson(path, fetchImpl) {
   if (body?.code === 404 || res.status === 404) {
     throw new FetchError("Tweet not found. It may be deleted, protected or age-restricted.");
   }
-  if (!res.ok || body?.code !== 200 || !body.status) {
+  if (!res.ok || body?.code !== 200 || !isTweet(body.status)) {
     throw new FetchError(body?.message || `fxtwitter returned HTTP ${res.status}.`);
   }
   return body;
@@ -25,7 +27,8 @@ async function getJson(path, fetchImpl) {
 export async function loadX(id, fetchImpl = fetch) {
   const body = await getJson(`/thread/${id}`, fetchImpl);
   // Trust thread order, not replying_to: trailing self-tweets can have a null reply field.
-  const thread = body.thread?.length ? body.thread : [body.status];
+  const chain = Array.isArray(body.thread) ? body.thread.filter(isTweet) : [];
+  const thread = chain.length ? chain : [body.status];
 
   const parents = [];
   let reply = thread[0].replying_to;

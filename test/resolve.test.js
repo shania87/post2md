@@ -42,3 +42,16 @@ test("non-post links are rejected", () => {
   assert.equal(resolve("https://example.com/a/status/1"), null);
   assert.equal(resolve("no link here"), null);
 });
+
+test("status id must end at a path boundary", () => {
+  assert.equal(resolve("https://x.com/u/status/123abc"), null);
+  assert.equal(resolve("https://x.com/u/status/123abc https://x.com/v/status/456").id, "456");
+});
+
+test("long junk text stays fast", () => {
+  for (const junk of ["a".repeat(100000), "a.".repeat(50000), "https://" + "a-".repeat(50000)]) {
+    const start = performance.now();
+    assert.equal(resolve(junk), null);
+    assert.ok(performance.now() - start < 200, `took ${performance.now() - start}ms`);
+  }
+});

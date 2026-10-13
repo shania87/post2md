@@ -4,6 +4,8 @@ import { prefetch, shareOut, copyText } from "./share.js";
 
 const $ = (id) => document.getElementById(id);
 let current = null;
+// Bumped on every run; a run whose number is no longer current drops its result.
+let generation = 0;
 
 function setStatus(message, kind = "") {
   $("status").textContent = message;
@@ -33,6 +35,9 @@ function renderImages() {
 }
 
 async function run(...inputs) {
+  const mine = ++generation;
+  const stale = () => mine !== generation;
+  current = null;
   $("result").hidden = true;
   $("handoff").hidden = true;
   const link = resolve(...inputs);
@@ -54,9 +59,11 @@ async function run(...inputs) {
   }
 
   setStatus(`Loading ${site.label} post…`);
+  let result;
   try {
-    current = site.format(await site.load(link));
+    result = site.format(await site.load(link));
   } catch (err) {
+    if (stale()) return;
     setStatus(err.message || String(err), "error");
     $("handoffNote").textContent = "";
     $("handoffLink").href = link.url;
@@ -65,11 +72,20 @@ async function run(...inputs) {
     return;
   }
 
-  $("markdown").value = current.markdown;
+  if (stale()) return;
+  current = result;
+  $("markdown").value = result.markdown;
   renderImages();
   $("result").hidden = false;
+  // Share stays off until downloads settle, or it would send whichever images happened to be ready.
+  const pending = result.images.length > 0;
+  $("share").disabled = pending;
+  $("share").textContent = pending ? "Preparing images…" : "Share";
   setStatus("");
-  await prefetch(current.images);
+  await prefetch(result.images);
+  if (stale()) return;
+  $("share").disabled = false;
+  $("share").textContent = "Share";
   renderImages();
 }
 

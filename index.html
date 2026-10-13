@@ -38,6 +38,7 @@
       display: inline-block;
     }
     button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+    button:disabled { opacity: 0.6; cursor: progress; }
     #status { min-height: 1.5em; margin: 12px 0; color: var(--muted); }
     #status.error { color: var(--err); }
     #status.ok { color: var(--ok); }

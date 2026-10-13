@@ -2,7 +2,7 @@
 
 Share a social media post into this page and get LLM-ready markdown plus the post's images, then share that on into Claude or ChatGPT.
 
-Live: https://shania87.github.io/post2md/ (once Pages is enabled)
+Live: https://shania87.github.io/post2md/
 
 ## Sites
 

@@ -3,6 +3,8 @@ import { SITES } from "./sites.js";
 import { prefetch, shareOut, copyText } from "./share.js";
 
 const $ = (id) => document.getElementById(id);
+const labels = Object.values(SITES).map((site) => site.label);
+const SUPPORTED = `${labels.slice(0, -1).join(", ")} or ${labels.at(-1)}`;
 let current = null;
 // The last loaded post, kept so toggling replies re-formats without refetching.
 let loaded = null;
@@ -46,7 +48,7 @@ async function run(...inputs) {
   $("handoff").hidden = true;
   const link = resolve(...inputs);
   if (!link) {
-    setStatus("No X or Reddit post link found in that.", "error");
+    setStatus(`No ${SUPPORTED} post link found in that.`, "error");
     return;
   }
   $("input").value = link.url;
@@ -132,7 +134,7 @@ $("copy").addEventListener("click", async () => {
   }
 });
 
-// Share target and ?u= both arrive as query params. The X app usually puts the link in `text`.
+// Share target and ?u= both arrive as query params. The X and Threads apps usually put the link in `text`.
 const params = new URLSearchParams(location.search);
 const incoming = ["u", "url", "text", "title"].map((key) => params.get(key)).filter(Boolean);
 if (incoming.length) run(...incoming);

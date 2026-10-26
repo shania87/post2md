@@ -3,12 +3,19 @@
 
 import { loadX } from "./x.js";
 import { formatX } from "./format-x.js";
+import { loadThreads } from "./threads.js";
+import { formatThreads } from "./format-threads.js";
 
 export const SITES = {
   x: {
     label: "X",
     load: (link) => loadX(link.id),
     format: formatX,
+  },
+  threads: {
+    label: "Threads",
+    load: (link) => loadThreads(link),
+    format: formatThreads,
   },
   reddit: {
     label: "Reddit",

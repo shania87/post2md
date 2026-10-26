@@ -1,7 +1,7 @@
 {
   "name": "post2md",
   "short_name": "post2md",
-  "description": "Turn an X post or thread into markdown plus images for an LLM.",
+  "description": "Turn an X or Threads post or thread into markdown plus images for an LLM.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

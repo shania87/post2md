@@ -18,6 +18,15 @@ const MATCHERS = [
     },
   },
   {
+    site: "threads",
+    hosts: ["threads.com", "threads.net"],
+    parse(url) {
+      // /share/ and /t/ links are resolved to the full post by the relay.
+      if (!/^\/(?:@[\w.]+\/post\/[\w-]+|t\/[\w-]+|share\/[\w-]+)\/?$/.test(url.pathname)) return null;
+      return { url: "https://www.threads.com" + url.pathname };
+    },
+  },
+  {
     site: "reddit",
     hosts: ["reddit.com", "old.reddit.com", "new.reddit.com", "m.reddit.com", "np.reddit.com", "redd.it"],
     parse(url) {

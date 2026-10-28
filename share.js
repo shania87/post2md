@@ -28,14 +28,11 @@ export async function shareOut({ title, markdown, images }) {
   if (files.length && navigator.canShare?.({ text: markdown, files })) {
     // Some apps (the Claude Android app among them) keep the files and drop the text,
     // so the markdown also goes on the clipboard, ready to paste.
-    let copied = true;
-    try {
-      await copyText(markdown);
-    } catch {
-      // A blocked clipboard shouldn't stop the share; the message just won't claim a copy.
-      copied = false;
-    }
+    // share() needs the tap's activation, so don't wait on the copy (a permission
+    // prompt can outlast it). A blocked clipboard just means the message won't claim a copy.
+    const copying = copyText(markdown).then(() => true, () => false);
     await navigator.share({ title, text: markdown, files });
+    const copied = await copying;
     const shared = `Shared ${files.length} image${files.length > 1 ? "s" : ""}.`;
     return copied ? `${shared} Markdown copied too, paste it in if it's missing.` : shared;
   }

@@ -119,3 +119,84 @@ test("drift guard: AbortError from file sharing propagates", async () => {
   await assert.rejects(shareOut({ title, markdown, images }), (err) => err.name === "AbortError");
   assert.deepEqual(calls, [{ title, text: markdown, files: [images[0].file] }]);
 });
+
+// Transient activation: start clipboard copy first, but share before it settles.
+test("files: share is called while the clipboard write is still pending", async () => {
+  const images = [image()], calls = [];
+  let resolveClipboard;
+  const clipboard = new Promise((resolve) => { resolveClipboard = resolve; });
+  stubNavigator({
+    canShare: () => true,
+    clipboard: { writeText: (text) => { calls.push(["copy", text]); return clipboard; } },
+    share: async (payload) => { calls.push(["share", payload]); },
+  });
+  const sharing = shareOut({ title, markdown, images });
+  try {
+    for (let i = 0; i < 3; i++) await new Promise((r) => setImmediate(r));
+    assert.deepEqual(calls, [
+      ["copy", markdown],
+      ["share", { title, text: markdown, files: [images[0].file] }],
+    ], "share must already be called while the clipboard write is pending");
+    resolveClipboard();
+    assert.equal(await sharing, "Shared 1 image. Markdown copied too, paste it in if it's missing.");
+  } finally {
+    resolveClipboard();
+    await sharing;
+  }
+});
+
+test("files: clipboard rejecting after share still reports no copy", async () => {
+  const images = [image()], calls = [];
+  let rejectClipboard;
+  const clipboard = new Promise((resolve, reject) => { rejectClipboard = reject; });
+  stubNavigator({
+    canShare: () => true,
+    clipboard: { writeText: (text) => { calls.push(["copy", text]); return clipboard; } },
+    share: async (payload) => { calls.push(["share", payload]); },
+  });
+  const sharing = shareOut({ title, markdown, images });
+  try {
+    for (let i = 0; i < 3; i++) await new Promise((r) => setImmediate(r));
+    assert.deepEqual(calls, [
+      ["copy", markdown],
+      ["share", { title, text: markdown, files: [images[0].file] }],
+    ], "share must already be called before the pending clipboard write rejects");
+    rejectClipboard(new Error("Permission denied"));
+    assert.equal(await sharing, "Shared 1 image.");
+  } finally {
+    rejectClipboard(new Error("Permission denied"));
+    await sharing;
+  }
+});
+
+test("files: share rejecting while the clipboard is pending propagates the share error and leaves no unhandled rejection", async () => {
+  const images = [image()], unhandled = [];
+  const error = new DOMException("Share cancelled", "AbortError");
+  let rejectClipboard, timer;
+  const clipboard = new Promise((resolve, reject) => { rejectClipboard = reject; });
+  const onUnhandled = (reason) => { unhandled.push(reason); };
+  process.on("unhandledRejection", onUnhandled);
+  stubNavigator({
+    canShare: () => true,
+    clipboard: { writeText: () => clipboard },
+    share: async () => { throw error; },
+  });
+  const sharing = shareOut({ title, markdown, images });
+  try {
+    await Promise.race([
+      assert.rejects(sharing, (err) => err === error && err.name === "AbortError"),
+      new Promise((resolve, reject) => {
+        timer = setTimeout(() => reject(new Error("shareOut did not propagate AbortError while the clipboard write was pending within 2000 ms")), 2000);
+      }),
+    ]);
+    rejectClipboard(new Error("Permission denied"));
+    for (let i = 0; i < 3; i++) await new Promise((r) => setImmediate(r));
+    assert.deepEqual(unhandled, [], "late clipboard rejection must be handled after share rejects");
+  } finally {
+    clearTimeout(timer);
+    rejectClipboard(new Error("Permission denied"));
+    await sharing.catch(() => {});
+    for (let i = 0; i < 3; i++) await new Promise((r) => setImmediate(r));
+    process.removeListener("unhandledRejection", onUnhandled);
+  }
+});

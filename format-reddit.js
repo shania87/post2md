@@ -2,6 +2,7 @@
 
 const MAX_REPLY_DEPTH = 4;
 const REMOVED = new Set(["[removed]", "[deleted]"]);
+const COMMENT_MEDIA_RE = /!\[(gif|img)\]\(([^)\s]+)\)/gi;
 
 const isPost = (value) => value !== null && typeof value === "object" && typeof value.id === "string";
 
@@ -84,11 +85,17 @@ function mediaLines(post, images) {
 }
 
 // A crosspost carries no content of its own: the original's text and media stand in for it.
+function crosspostNotice(post, original) {
+  const from = `Crossposted from r/${original.subreddit} by u/${original.author}: ${postUrl(original)}`;
+  const title = text(original.title);
+  return title && title !== text(post.title) ? `_${from}_\n\n**Original title:** ${title}` : `_${from}_`;
+}
+
 function postBody(post, images) {
   const original = post.crosspost_parent_list?.find(isPost);
   const source = original || post;
   const parts = [];
-  if (original) parts.push(`_Crossposted from r/${original.subreddit} by u/${original.author}: ${postUrl(original)}_`);
+  if (original) parts.push(crosspostNotice(post, original));
   const body = bodyText(source.selftext);
   if (body) parts.push(body);
   const media = mediaLines(source, images);
@@ -112,10 +119,31 @@ function header(post) {
 
 const byScore = (a, b) => (Number(b.score) || 0) - (Number(a.score) || 0);
 
-function commentBlocks(comment, depth) {
-  const lines = [`**u/${comment.author}** · ${count(comment.score, "point")}`, bodyText(comment.body)];
+const commentUrl = (comment, post) => (/^\w+$/.test(comment.id ?? "") ? `${postUrl(post)}${comment.id}/` : postUrl(post));
+
+function commentMediaUrl(token, comment) {
+  const meta = comment.media_metadata?.[token];
+  if (meta && meta.status !== "failed") {
+    const url = httpsUrl(meta.s?.gif || meta.s?.u);
+    if (url) return url;
+  }
+  const giphy = token.match(/^giphy\|([\w-]+)(?:\||$)/i)?.[1];
+  return giphy ? `https://media.giphy.com/media/${giphy}/giphy.gif` : null;
+}
+
+function commentBody(comment, post) {
+  const body = bodyText(comment.body);
+  return body.replace(COMMENT_MEDIA_RE, (_, kind, token) => {
+    const label = kind.toLowerCase() === "gif" ? "GIF" : "image";
+    const url = commentMediaUrl(token, comment) || commentUrl(comment, post);
+    return `[${label}](${mdUrl(url)})`;
+  });
+}
+
+function commentBlocks(comment, depth, post) {
+  const lines = [`**u/${comment.author}** · ${count(comment.score, "point")}`, commentBody(comment, post)];
   const block = quoteLines(lines.join("\n"), ">".repeat(Math.min(depth, MAX_REPLY_DEPTH)));
-  const replies = [...comment.replies].sort(byScore).flatMap((reply) => commentBlocks(reply, depth + 1));
+  const replies = [...comment.replies].sort(byScore).flatMap((reply) => commentBlocks(reply, depth + 1, post));
   return [block, ...replies];
 }
 
@@ -131,7 +159,7 @@ function commentsSection(comments, post) {
   const of = reported > shown ? ` of ${reported.toLocaleString("en-US")}` : "";
   return ["## Comments",
     `_${count(shown, "comment")}${of} from the archive, highest score first at each level. Images in comments are linked, not attached._`,
-    ...[...comments].sort(byScore).flatMap((c) => commentBlocks(c, 1))];
+    ...[...comments].sort(byScore).flatMap((c) => commentBlocks(c, 1, post))];
 }
 
 export function formatReddit({ post, comments = [] }, { includeReplies = true } = {}) {

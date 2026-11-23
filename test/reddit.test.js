@@ -76,6 +76,8 @@ test("video post links the post and nests three levels", async () => {
   assert.deepEqual(images, []);
   assert.ok(markdown.includes("[Video](https://www.reddit.com/r/singapore/comments/1y2jvon/"));
   assert.match(markdown, /^>>> \*\*u\/RedditLIONS\*\* · 7 points\n>>> Time to build a second Jewel/m);
+  assert.ok(!markdown.includes("![gif]("));
+  assert.ok(markdown.includes("[GIF](https://media.giphy.com/media/KzeZ3OXHoSDVZH9cmy/giphy.gif)"));
 });
 
 test("gallery: every item attached in gallery order", async () => {
@@ -91,8 +93,25 @@ test("crosspost uses the original's media and says where it came from", async ()
   const { markdown, images } = await format("1y35rjx", "crosspost", null);
   assert.ok(markdown.includes("_Crossposted from r/u_chubbybronco by u/chubbybronco: " +
     "https://www.reddit.com/user/chubbybronco/comments/1y35nys/the_wife_wolf_a_crumpled_paper_towel_in_my_weed/_"));
+  assert.ok(markdown.includes('**Original title:** "The Wife Wolf". A crumpled paper towel in my weed bag.'));
   assert.equal(images.length, 1);
   assert.equal(images[0].url, "https://i.redd.it/2tc7bnpnl93i1.jpeg");
+  const sameTitle = structuredClone(post("crosspost"));
+  sameTitle.title = sameTitle.crosspost_parent_list[0].title;
+  assert.ok(!formatReddit({ post: sameTitle, comments: [] }).markdown.includes("Original title:"));
+});
+
+test("comment embedded media tokens resolve via giphy, media_metadata, or comment permalink fallback", () => {
+  const base = { id: "abc", subreddit: "t", author: "a", title: "T", is_self: true,
+    permalink: "/r/t/comments/abc/t/" };
+  const comments = [
+    { id: "c1", author: "u1", score: 2, replies: [],
+      body: "Look ![img](empl|123) and ![gif](custom|456)",
+      media_metadata: { "empl|123": { status: "valid", e: "Image", s: { u: "https://preview.redd.it/a.png?width=100&amp;s=1" } } } },
+  ];
+  const { markdown } = formatReddit({ post: base, comments });
+  assert.ok(markdown.includes("[image](https://preview.redd.it/a.png?width=100&s=1)"));
+  assert.ok(markdown.includes("[GIF](https://www.reddit.com/r/t/comments/abc/t/c1/)"));
 });
 
 test("external link post shows the link, not an image", async () => {

@@ -27,16 +27,6 @@ test("other X hosts and forms", () => {
   assert.equal(resolve("x.com/a/status/321").id, "321");
 });
 
-test("Reddit links hand off, query stripped", () => {
-  assert.deepEqual(resolve("https://www.reddit.com/r/SingaporeRaw/s/dUUw3lwgFS"), {
-    site: "reddit", url: "https://www.reddit.com/r/SingaporeRaw/s/dUUw3lwgFS",
-  });
-  assert.equal(
-    resolve("https://old.reddit.com/r/x/comments/1x0ksoi/what/?share_id=z&utm_source=a").url,
-    "https://www.reddit.com/r/x/comments/1x0ksoi/what/",
-  );
-});
-
 test("non-post links are rejected", () => {
   assert.equal(resolve("https://x.com/andilosing"), null);
   assert.equal(resolve("https://example.com/a/status/1"), null);

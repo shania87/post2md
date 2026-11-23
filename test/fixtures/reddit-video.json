@@ -1,0 +1,43 @@
+{
+ "data": [
+  {
+   "author": "czsyc7",
+   "created_utc": 1795334022,
+   "domain": "v.redd.it",
+   "id": "1y2jvon",
+   "is_self": false,
+   "is_video": true,
+   "link_flair_text": "Video",
+   "media": {
+    "reddit_video": {
+     "duration": 32,
+     "height": 1920,
+     "width": 1080,
+     "is_gif": false
+    }
+   },
+   "num_comments": 33,
+   "over_18": false,
+   "permalink": "/r/singapore/comments/1y2jvon/rts_fullspeed_test_run/",
+   "post_hint": "hosted:video",
+   "preview": {
+    "images": [
+     {
+      "source": {
+       "height": 1920,
+       "url": "https://external-preview.redd.it/dzhja3NqMHJkNDNpMWswVLZLyJFteSii55kjv5Ozrz6JWoV9iDoZF8v-ThgD.jpeg?format=pjpg&auto=webp&s=45389fc7d6de18616697d9f49d1f8c3074412f74",
+       "width": 1080
+      }
+     }
+    ]
+   },
+   "retrieved_on": 1795334060,
+   "score": 249,
+   "selftext": "",
+   "spoiler": false,
+   "subreddit": "singapore",
+   "title": "RTS Full-Speed Test Run(?)",
+   "url": "https://v.redd.it/h1nmm45rd43i1"
+  }
+ ]
+}

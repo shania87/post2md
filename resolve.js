@@ -30,8 +30,13 @@ const MATCHERS = [
     site: "reddit",
     hosts: ["reddit.com", "old.reddit.com", "new.reddit.com", "m.reddit.com", "np.reddit.com", "redd.it"],
     parse(url) {
-      const origin = url.hostname === "redd.it" ? "https://redd.it" : "https://www.reddit.com";
-      return { url: origin + url.pathname };
+      // Share links (/r/<sub>/s/<code>) only become a post ID once the relay follows their redirect.
+      const share = url.pathname.match(/^\/r\/\w+\/s\/\w+\/?$/);
+      if (share) return { url: "https://www.reddit.com" + share[0] };
+      const path = url.hostname === "redd.it" ? /^\/(\w+)\/?$/
+        : /^(?:\/(?:r|u|user)\/[\w-]+)?\/(?:comments|gallery)\/(\w+)(?=\/|$)/;
+      const id = url.pathname.match(path)?.[1].toLowerCase();
+      return id ? { id, url: `https://www.reddit.com/comments/${id}/` } : null;
     },
   },
 ];

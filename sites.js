@@ -5,6 +5,8 @@ import { loadX } from "./x.js";
 import { formatX } from "./format-x.js";
 import { loadThreads } from "./threads.js";
 import { formatThreads } from "./format-threads.js";
+import { loadReddit } from "./reddit.js";
+import { formatReddit } from "./format-reddit.js";
 
 export const SITES = {
   x: {
@@ -19,14 +21,7 @@ export const SITES = {
   },
   reddit: {
     label: "Reddit",
-    // Parked on RedditMD (see the product brief). Its page reads ?url= and starts the export.
-    // Short /s/ share links still need opening in a browser first: RedditMD can't resolve them.
-    handoff: (link) => ({
-      href: `https://adoucett.github.io/RedditMD/?url=${encodeURIComponent(link.url)}`,
-      label: "Open in RedditMD",
-      note: link.url.includes("/s/")
-        ? "This is a Reddit share link. RedditMD needs the full post link: open it in the browser first, then share that."
-        : "Reddit isn't handled here yet. RedditMD does it well.",
-    }),
+    load: (link) => loadReddit(link),
+    format: formatReddit,
   },
 };

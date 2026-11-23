@@ -1,0 +1,79 @@
+{
+ "data": [
+  {
+   "author": "Affectionate_Clue369",
+   "created_utc": 1795409963,
+   "domain": "reddit.com",
+   "gallery_data": {
+    "items": [
+     {
+      "id": 1102910883,
+      "media_id": "uptdktyjna3i1",
+      "is_deleted": false
+     },
+     {
+      "id": 1102910884,
+      "media_id": "4w5h8i4kna3i1",
+      "is_deleted": false
+     },
+     {
+      "id": 1102910885,
+      "media_id": "fvhmhu6kna3i1",
+      "is_deleted": false
+     }
+    ]
+   },
+   "id": "1y39kxx",
+   "is_gallery": true,
+   "is_self": false,
+   "is_video": false,
+   "link_flair_text": null,
+   "media": null,
+   "media_metadata": {
+    "uptdktyjna3i1": {
+     "e": "Image",
+     "m": "image/jpeg",
+     "id": "uptdktyjna3i1",
+     "s": {
+      "u": "https://i.redd.it/uptdktyjna3i1.jpeg",
+      "x": 4096,
+      "y": 3072
+     },
+     "status": "valid"
+    },
+    "4w5h8i4kna3i1": {
+     "e": "Image",
+     "m": "image/jpeg",
+     "id": "4w5h8i4kna3i1",
+     "s": {
+      "u": "https://i.redd.it/4w5h8i4kna3i1.jpeg",
+      "x": 3072,
+      "y": 2663
+     },
+     "status": "valid"
+    },
+    "fvhmhu6kna3i1": {
+     "e": "Image",
+     "m": "image/jpeg",
+     "id": "fvhmhu6kna3i1",
+     "s": {
+      "u": "https://i.redd.it/fvhmhu6kna3i1.jpeg",
+      "x": 3072,
+      "y": 2776
+     },
+     "status": "valid"
+    }
+   },
+   "num_comments": 0,
+   "over_18": false,
+   "permalink": "/r/pics/comments/1y39kxx/oc_an_apartment_nearby_where_i_live_caught_fire/",
+   "retrieved_on": 1795409975,
+   "score": 1,
+   "selftext": "",
+   "spoiler": false,
+   "subreddit": "pics",
+   "title": "OC an apartment nearby where I live caught fire this evening...",
+   "url": "https://www.reddit.com/gallery/1y39kxx"
+  }
+ ]
+}

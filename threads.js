@@ -13,11 +13,14 @@ const nodes = (connection) => (Array.isArray(connection?.posts?.edges) ? connect
   .map((edge) => edge?.node).filter(isPost);
 
 // Every `media` object under a GraphQL result, skipping relatedPosts (unrelated posts).
+const isObject = (value) => value !== null && typeof value === "object";
+const isPostMedia = (value, key) => key === "media" && Boolean(value.text_post_app_info) && typeof value.id === "string";
+
 function mediaObjects(html) {
   const found = [];
   const walk = (value, key) => {
-    if (!value || typeof value !== "object" || key === "relatedPosts") return;
-    if (key === "media" && value.text_post_app_info && typeof value.id === "string") found.push(value);
+    if (!isObject(value) || key === "relatedPosts") return;
+    if (isPostMedia(value, key)) found.push(value);
     for (const [k, child] of Object.entries(value)) walk(child, k);
   };
   for (const [, json] of html.matchAll(SCRIPT_RE)) {
@@ -48,17 +51,26 @@ export function parsePage(html, code) {
 
 const postUrl = (post) => `https://www.threads.com/@${post.user?.username}/post/${post.code}`;
 
-async function fetchPage(url, fetchImpl) {
-  let res;
+async function callRelay(url, fetchImpl) {
   try {
-    res = await fetchImpl(`${RELAY}?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
+    return await fetchImpl(`${RELAY}?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
   } catch {
     throw new FetchError("Couldn't reach the Threads relay. Some networks block workers.dev; try mobile data.");
   }
-  let body = null;
-  try { body = await res.json(); } catch { /* non-JSON error page */ }
-  if (!res.ok) throw new FetchError(typeof body?.error === "string" ? body.error : `The Threads relay returned HTTP ${res.status}.`);
-  const code = typeof body?.url === "string" && body.url.match(/\/post\/([\w-]+)/)?.[1];
+}
+
+async function readJson(res) {
+  try { return await res.json(); } catch { return null; /* non-JSON error page */ }
+}
+
+const relayError = (body, res) => (typeof body?.error === "string" ? body.error : `The Threads relay returned HTTP ${res.status}.`);
+const postCode = (body) => (typeof body?.url === "string" ? body.url.match(/\/post\/([\w-]+)/)?.[1] : undefined);
+
+async function fetchPage(url, fetchImpl) {
+  const res = await callRelay(url, fetchImpl);
+  const body = await readJson(res);
+  if (!res.ok) throw new FetchError(relayError(body, res));
+  const code = postCode(body);
   if (!code || typeof body.html !== "string") throw new FetchError("The Threads relay sent back something unexpected.");
   return parsePage(body.html, code);
 }

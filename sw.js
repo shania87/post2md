@@ -1,9 +1,9 @@
 // Exists so Chrome treats the page as installable (and so it can be a share target).
 // Network first; the cached shell only covers opening the app with no connection.
 
-const CACHE = "post2md-v4";
+const CACHE = "post2md-v5";
 const SHELL = ["./", "index.html", "app.js", "resolve.js", "sites.js", "x.js", "format-x.js",
-  "threads.js", "format-threads.js", "share.js",
+  "threads.js", "format-threads.js", "reddit.js", "format-reddit.js", "share.js",
   "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (event) => {
